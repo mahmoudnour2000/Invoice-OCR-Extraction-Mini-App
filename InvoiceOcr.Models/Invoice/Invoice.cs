@@ -1,4 +1,4 @@
-﻿namespace InvoiceOcr.Models
+﻿namespace InvoiceOcr.Model
 {
     public class Invoice
     {

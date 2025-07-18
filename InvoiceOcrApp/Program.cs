@@ -1,9 +1,6 @@
 ﻿using InvoiceOcr.Data;
 using InvoiceOcr.Repositories;
 using InvoiceOcr.Services;
-using InvoiceOcr.Data;
-using InvoiceOcr.Repositories;
-using InvoiceOcr.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
@@ -16,25 +13,28 @@ namespace InvoiceOcrApp
     {
         public static void Main(string[] args)
         {
+            #region Application Builder Setup
             var builder = WebApplication.CreateBuilder(args);
-
-            // Add services to the container.
             builder.Services.AddControllers();
+            #endregion
 
-            // DI for Invoice OCR 
+            #region Database Configuration
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlite("Data Source=invoiceocr.db").UseLazyLoadingProxies());
+            #endregion
 
-            // DI Repositories
+            #region Dependency Injection
+            // Repositories
             builder.Services.AddScoped<InvoiceRepository>();
             builder.Services.AddScoped<InvoiceDetailRepository>();
 
-            // DI Services
+            // Services
             builder.Services.AddScoped<PdfConverter>();
             builder.Services.AddScoped<OcrService>();
             builder.Services.AddScoped<InvoiceService>();
+            #endregion
 
-            // إضافة Swagger مع دعم تعليقات XML
+            #region Swagger Configuration
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(c =>
             {
@@ -45,13 +45,15 @@ namespace InvoiceOcrApp
                     Description = "API for extracting and managing invoice data from images or PDFs"
                 });
             });
+            #endregion
 
-            // Add Logging
+            #region Logging Configuration
             builder.Services.AddLogging(logging => logging.AddConsole());
+            #endregion
 
+            #region Application Pipeline Configuration
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
@@ -65,6 +67,7 @@ namespace InvoiceOcrApp
             app.UseHttpsRedirection();
             app.MapControllers();
             app.Run();
+            #endregion
         }
     }
 }

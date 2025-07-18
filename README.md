@@ -53,9 +53,15 @@ A .NET 9 web application that extracts data from invoice images using OCR (Optic
 
 ## API Endpoints
 
-- `POST /api/invoices/upload` - Upload and process invoice
-- `GET /api/invoices` - Get all invoices
-- `GET /api/invoices/{id}` - Get specific invoice
+### Upload Controller
+- `POST /api/Upload` - Upload and process invoice image/PDF file
+
+### Invoice Controller
+- `POST /api/Invoice` - Create a new invoice manually
+- `GET /api/Invoice/{id}` - Get specific invoice by ID
+- `GET /api/Invoice/customer/{customerName}` - Get invoices by customer name
+- `GET /api/Invoice/details/{invoiceId}` - Get invoice details by invoice ID
+- `PUT /api/Invoice` - Update existing invoice
 
 ## Configuration
 

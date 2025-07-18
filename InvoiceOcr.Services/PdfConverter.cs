@@ -12,6 +12,7 @@ namespace InvoiceOcr.Services
 {
     public class PdfConverter
     {
+        #region PDF to Image Conversion
         public async Task<Stream> ConvertPdfToImageAsync(string pdfPath)
         {
             if (!File.Exists(pdfPath))
@@ -23,6 +24,7 @@ namespace InvoiceOcr.Services
             {
                 return await Task.Run(() =>
                 {
+                    #region PDF Document Setup
                     using var pdfReader = new PdfReader(pdfPath);
                     using var pdfDocument = new PdfDocument(pdfReader);
                     
@@ -33,8 +35,9 @@ namespace InvoiceOcr.Services
 
                     var page = pdfDocument.GetFirstPage();
                     var pageSize = page.GetPageSize();
-                    
-                    // Create bitmap with high DPI for better OCR
+                    #endregion
+
+                    #region Image Generation Setup
                     var width = (int)(pageSize.GetWidth() * 2);
                     var height = (int)(pageSize.GetHeight() * 2);
                     
@@ -43,8 +46,9 @@ namespace InvoiceOcr.Services
                     
                     graphics.Clear(System.Drawing.Color.White);
                     graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
-                    
-                    // Extract text and render as image (simplified approach)
+                    #endregion
+
+                    #region Text Extraction and Rendering
                     var strategy = new SimpleTextExtractionStrategy();
                     var text = PdfTextExtractor.GetTextFromPage(page, strategy);
                     
@@ -59,12 +63,15 @@ namespace InvoiceOcr.Services
                         graphics.DrawString(line, font, brush, 20, y);
                         y += 20;
                     }
-                    
+                    #endregion
+
+                    #region Image Stream Generation
                     var memoryStream = new MemoryStream();
                     bitmap.Save(memoryStream, ImageFormat.Png);
                     memoryStream.Position = 0;
                     
                     return memoryStream;
+                    #endregion
                 });
             }
             catch (Exception ex)
@@ -72,5 +79,6 @@ namespace InvoiceOcr.Services
                 throw new InvalidOperationException($"Failed to convert PDF to image: {ex.Message}", ex);
             }
         }
+        #endregion
     }
 }

@@ -3,16 +3,19 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using InvoiceOcr.Data;
-using InvoiceOcr.Models;
+using InvoiceOcr.Model;
 
 namespace InvoiceOcr.Repositories
 {
     public class InvoiceRepository : BaseRepository<Invoice>
     {
+        #region Constructor
         public InvoiceRepository(AppDbContext context) : base(context)
         {
         }
+        #endregion
 
+        #region Query Operations
         public async Task<Invoice> GetInvoiceWithDetailsAsync(int id)
         {
             return await _context.Invoices
@@ -32,5 +35,6 @@ namespace InvoiceOcr.Repositories
                 .Where(i => i.CustomerName.Contains(customerName))
                 .ToListAsync();
         }
+        #endregion
     }
 }

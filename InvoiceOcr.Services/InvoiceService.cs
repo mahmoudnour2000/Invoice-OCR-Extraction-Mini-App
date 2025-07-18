@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using InvoiceOcr.DTOs;
 using InvoiceOcr.DTOs.Mappers;
+using InvoiceOcr.Model;
 using InvoiceOcr.Repositories;
 using Microsoft.Extensions.Logging;
 
@@ -11,6 +12,7 @@ namespace InvoiceOcr.Services
 {
     public class InvoiceService
     {
+        #region Fields and Constructor
         private readonly InvoiceRepository _invoiceRepository;
         private readonly InvoiceDetailRepository _invoiceDetailRepository;
         private readonly ILogger<InvoiceService> _logger;
@@ -21,7 +23,9 @@ namespace InvoiceOcr.Services
             _invoiceDetailRepository = invoiceDetailRepository ?? throw new ArgumentNullException(nameof(invoiceDetailRepository));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
+        #endregion
 
+        #region Invoice Creation and Retrieval
         public async Task<int> CreateInvoiceAsync(InvoiceDto invoiceDto)
         {
             if (invoiceDto == null)
@@ -52,13 +56,17 @@ namespace InvoiceOcr.Services
             var invoices = await _invoiceRepository.GetInvoiceByCustomerAsync(customerName);
             return invoices.ToDtoList();
         }
+        #endregion
 
+        #region Invoice Details Management
         public async Task<List<InvoiceDetailDto>> GetDetailsByInvoiceIdAsync(int invoiceId)
         {
             var details = await _invoiceDetailRepository.GetDetailsByInvoiceIdAsync(invoiceId);
             return details.ToDtoList();
         }
+        #endregion
 
+        #region Invoice Update Operations
         public async Task UpdateInvoiceAsync(InvoiceDto invoiceDto)
         {
             if (invoiceDto == null)
@@ -73,12 +81,24 @@ namespace InvoiceOcr.Services
             }
 
             var updatedInvoice = invoiceDto.ToEntity();
+            UpdateInvoiceProperties(invoice, updatedInvoice);
+            await UpdateInvoiceDetails(invoice, updatedInvoice);
+
+            await _invoiceRepository.UpdateAsync(invoice);
+            _logger.LogInformation("Invoice with ID {InvoiceId} updated successfully", invoice.Id);
+        }
+
+        private void UpdateInvoiceProperties(Invoice invoice, Invoice updatedInvoice)
+        {
             invoice.InvoiceNumber = updatedInvoice.InvoiceNumber;
             invoice.InvoiceDate = updatedInvoice.InvoiceDate;
             invoice.CustomerName = updatedInvoice.CustomerName;
             invoice.TotalAmount = updatedInvoice.TotalAmount;
             invoice.Vat = updatedInvoice.Vat;
+        }
 
+        private async Task UpdateInvoiceDetails(Invoice invoice, Invoice updatedInvoice)
+        {
             var existingDetailIds = invoice.Details.Select(d => d.Id).ToList();
             var newDetailIds = updatedInvoice.Details.Where(d => d.Id != 0).Select(d => d.Id).ToList();
 
@@ -104,9 +124,7 @@ namespace InvoiceOcr.Services
                     invoice.Details.Add(updatedDetail);
                 }
             }
-
-            await _invoiceRepository.UpdateAsync(invoice);
-            _logger.LogInformation("Invoice with ID {InvoiceId} updated successfully", invoice.Id);
         }
+        #endregion
     }
 }

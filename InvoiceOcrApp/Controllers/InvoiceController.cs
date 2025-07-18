@@ -11,6 +11,7 @@ namespace InvoiceOcr.Controllers
     [ApiController]
     public class InvoiceController : ControllerBase
     {
+        #region Fields and Constructor
         private readonly InvoiceService _invoiceService;
         private readonly ILogger<InvoiceController> _logger;
 
@@ -19,7 +20,9 @@ namespace InvoiceOcr.Controllers
             _invoiceService = invoiceService ?? throw new ArgumentNullException(nameof(invoiceService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
+        #endregion
 
+        #region Invoice Creation
         [HttpPost]
         public async Task<IActionResult> CreateInvoice([FromBody] InvoiceDto invoiceDto)
         {
@@ -46,7 +49,9 @@ namespace InvoiceOcr.Controllers
                 return StatusCode(500, "An error occurred while creating the invoice.");
             }
         }
+        #endregion
 
+        #region Invoice Retrieval
         [HttpGet("{id}")]
         public async Task<IActionResult> GetInvoice(int id)
         {
@@ -102,7 +107,9 @@ namespace InvoiceOcr.Controllers
                 return StatusCode(500, "An error occurred while retrieving invoice details.");
             }
         }
+        #endregion
 
+        #region Invoice Update
         [HttpPut]
         public async Task<IActionResult> UpdateInvoice([FromBody] InvoiceDto invoiceDto)
         {
@@ -134,5 +141,6 @@ namespace InvoiceOcr.Controllers
                 return StatusCode(500, "An error occurred while updating the invoice.");
             }
         }
+        #endregion
     }
 }

@@ -14,6 +14,7 @@ namespace InvoiceOcr.Services
 {
     public class OcrService
     {
+        #region Fields and Constructor
         private readonly PdfConverter _pdfConverter;
         private readonly ILogger<OcrService> _logger;
 
@@ -22,14 +23,9 @@ namespace InvoiceOcr.Services
             _pdfConverter = pdfConverter ?? throw new ArgumentNullException(nameof(pdfConverter));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
+        #endregion
 
-        /// <summary>
-        /// Extracts invoice data from an image or PDF file.
-        /// </summary>
-        /// <param name="filePath">The path to the image or PDF file.</param>
-        /// <returns>An InvoiceDto containing extracted data.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when filePath is null or empty.</exception>
-        /// <exception cref="FileNotFoundException">Thrown when the file is not found.</exception>
+        #region Main OCR Processing
         public async Task<InvoiceDto> ExtractInvoiceDataAsync(string filePath)
         {
             if (string.IsNullOrWhiteSpace(filePath))
@@ -116,6 +112,27 @@ namespace InvoiceOcr.Services
             return invoiceDto;
         }
 
+        private string GetTessdataPath()
+        {
+            var possiblePaths = new[]
+            {
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tessdata"),
+                Path.Combine(Directory.GetCurrentDirectory(), "tessdata"),
+                "./tessdata",
+                @"C:\Program Files\Tesseract-OCR\tessdata"
+            };
+
+            foreach (var path in possiblePaths)
+            {
+                if (Directory.Exists(path))
+                    return path;
+            }
+
+            throw new DirectoryNotFoundException("Tessdata directory not found. Please ensure tessdata folder exists with language files.");
+        }
+        #endregion
+
+        #region Invoice Number Extraction
         private string ExtractInvoiceNumber(string[] lines)
         {
             _logger.LogDebug("Starting invoice number extraction");
@@ -293,7 +310,9 @@ namespace InvoiceOcr.Services
 
             return false;
         }
+        #endregion
 
+        #region Customer Information Extraction
         private string ExtractCustomerName(string[] lines)
         {
             var patterns = new[]
@@ -390,7 +409,9 @@ namespace InvoiceOcr.Services
 
             return false;
         }
+        #endregion
 
+        #region Date and Amount Extraction
         private DateTime ExtractInvoiceDate(string[] lines)
         {
             var patterns = new[]
@@ -553,7 +574,9 @@ namespace InvoiceOcr.Services
 
             return 0m;
         }
+        #endregion
 
+        #region Invoice Details Extraction
         private List<InvoiceDetailDto> ExtractInvoiceDetails(string[] lines)
         {
             var details = new List<InvoiceDetailDto>();
@@ -705,24 +728,6 @@ namespace InvoiceOcr.Services
 
             return null;
         }
-
-        private string GetTessdataPath()
-        {
-            var possiblePaths = new[]
-            {
-                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tessdata"),
-                Path.Combine(Directory.GetCurrentDirectory(), "tessdata"),
-                "./tessdata",
-                @"C:\Program Files\Tesseract-OCR\tessdata"
-            };
-
-            foreach (var path in possiblePaths)
-            {
-                if (Directory.Exists(path))
-                    return path;
-            }
-
-            throw new DirectoryNotFoundException("Tessdata directory not found. Please ensure tessdata folder exists with language files.");
-        }
+        #endregion
     }
 }

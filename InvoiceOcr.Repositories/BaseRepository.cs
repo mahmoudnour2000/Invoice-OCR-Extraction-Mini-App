@@ -8,13 +8,16 @@ namespace InvoiceOcr.Repositories
 {
     public class BaseRepository<T> where T : class
     {
+        #region Fields and Constructor
         protected readonly AppDbContext _context;
 
         public BaseRepository(AppDbContext context)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
+        #endregion
 
+        #region Query Operations
         public async Task<T> GetByIdAsync(int id)
         {
             return await _context.Set<T>().FindAsync(id);
@@ -24,7 +27,9 @@ namespace InvoiceOcr.Repositories
         {
             return await _context.Set<T>().ToListAsync();
         }
+        #endregion
 
+        #region Command Operations
         public async Task AddAsync(T entity)
         {
             if (entity == null) throw new ArgumentNullException(nameof(entity));
@@ -49,5 +54,6 @@ namespace InvoiceOcr.Repositories
             _context.Set<T>().Remove(entity);
             await _context.SaveChangesAsync();
         }
+        #endregion
     }
 }

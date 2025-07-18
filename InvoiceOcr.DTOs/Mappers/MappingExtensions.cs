@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using InvoiceOcr.Models;
-
+using InvoiceOcr.Model;
+using InvoiceOcr.Model;
 
 namespace InvoiceOcr.DTOs.Mappers
 {
     public static class MappingExtensions
     {
+        #region Invoice Mapping
         public static Invoice ToEntity(this InvoiceDto dto)
         {
             if (dto == null) throw new ArgumentNullException(nameof(dto));
@@ -39,7 +40,9 @@ namespace InvoiceOcr.DTOs.Mappers
                 Details = entity.Details?.Select(d => d.ToDto()).ToList() ?? new List<InvoiceDetailDto>()
             };
         }
+        #endregion
 
+        #region Invoice Detail Mapping
         public static InvoiceDetail ToEntity(this InvoiceDetailDto dto)
         {
             if (dto == null) throw new ArgumentNullException(nameof(dto));
@@ -67,7 +70,9 @@ namespace InvoiceOcr.DTOs.Mappers
                 LineTotal = entity.LineTotal
             };
         }
+        #endregion
 
+        #region Collection Mapping
         public static List<InvoiceDto> ToDtoList(this IEnumerable<Invoice> entities)
         {
             return entities?.Select(e => e.ToDto()).Where(d => d != null).ToList() ?? new List<InvoiceDto>();
@@ -77,5 +82,6 @@ namespace InvoiceOcr.DTOs.Mappers
         {
             return entities?.Select(e => e.ToDto()).Where(d => d != null).ToList() ?? new List<InvoiceDetailDto>();
         }
+        #endregion
     }
 }
