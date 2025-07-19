@@ -53,21 +53,13 @@ namespace InvoiceOcr.Services
 
                 using var image = await Image.LoadAsync(imageStream);
                 image.Mutate(x => x
-                    .Resize(new ResizeOptions
-                    {
-                        Size = new Size((int)(image.Width * 2.0), (int)(image.Height * 2.0)),
-                        Mode = ResizeMode.Stretch
-                    })
-                    .Grayscale()
-                    .BinaryThreshold(0.5f)
-                    .Contrast(1.5f)
-                    .GaussianSharpen(3.0f));
+                    .Grayscale());
 
                 tempImagePath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.png");
                 await image.SaveAsync(tempImagePath);
 
                 using var engine = new TesseractEngine(GetTessdataPath(), "ara+eng", EngineMode.Default);
-                engine.SetVariable("tessedit_pageseg_mode", "6");
+                engine.SetVariable("tessedit_pageseg_mode", "3"); // Fully automatic page segmentation
                 engine.SetVariable("tessedit_char_whitelist", "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz$.,:-# أبتثجحخدذرزسشصضطظعغفقكلمنهويءآإأؤئة");
                 using var pix = Pix.LoadFromFile(tempImagePath);
                 using var page = engine.Process(pix);
@@ -142,18 +134,22 @@ namespace InvoiceOcr.Services
             var patterns = new[]
             {
                 @"#\s*(\d+)",                                          // # 123456 or #111111111
-                @"Invoice\s*#\s*(\d+)",                               // Invoice # 123456
-                @"فاتورة\s*رقم\s*(\d+)",                              // Arabic: فاتورة رقم 123456
+                @"neer\s*#\s*(\d+)",                                    // # 123456 or #111111111
+                @"eer\s*#\s*(\d+)",                                     // # 123456 or #111111111
+                @"[a-zA-Z]*\s*#\s*(\d+)",                            // eer # 123456, neer # 123456, Invoice # 123456
+                @"[a-zA-Z]*nvoice\s*#?\s*(\d+)",                     // Invoice 123456, nvoice # 123456, neer # 123456
+                @"Invoice\s*#\s*(\d+)",                             // Invoice # 123456
+                @"فاتورة\s*رقم\s*(\d+)",                            // Arabic: فاتورة رقم 123456
                 @"Invoice\s*(\d+)",                                   // Invoice 123456
-                @"Invoice\s*Number\s*:?\s*(\d+)",                     // Invoice Number: 123456
-                @"رقم\s*الفاتورة\s*:?\s*(\d+)",                       // Arabic invoice number
-                @"INV\s*[-#]?\s*(\d+)",                               // INV-123456 or INV#123456
-                @"No\.?\s*(\d+)",                                     // No. 123456 or No 123456
-                @"Invoice\s*:?\s*(\d+)",                              // Invoice: 123456
-                @"Inv\.?\s*:?\s*(\d+)",                               // Inv: 123456
-                @"Bill\s*#\s*(\d+)",                                  // Bill # 123456
-                @"Receipt\s*#\s*(\d+)",                               // Receipt # 123456
-                @"(\d+)\s*Invoice",                                   // 123456 Invoice
+                @"Invoice\s*Number\s*:?\s*(\d+)",                   // Invoice Number: 123456
+                @"رقم\s*الفاتورة\s*:?\s*(\d+)",                     // Arabic invoice number
+                @"INV\s*[-#]?\s*(\d+)",                             // INV-123456 or INV#123456
+                @"No\.?\s*(\d+)",                                   // No. 123456 or No 123456
+                @"Invoice\s*:?\s*(\d+)",                            // Invoice: 123456
+                @"Inv\.?\s*:?\s*(\d+)",                            // Inv: 123456
+                @"Bill\s*#\s*(\d+)",                                // Bill # 123456
+                @"Receipt\s*#\s*(\d+)",                             // Receipt # 123456
+                @"(\d+)\s*Invoice",                                  // 123456 Invoice
             };
 
             // First pass: Look for explicit patterns in all lines
@@ -177,19 +173,19 @@ namespace InvoiceOcr.Services
                 }
             }
 
-            // Second pass: Look for lines that contain "Invoice" and extract nearby numbers
+            // Second pass: Look for lines that contain Invoice-like words and extract nearby numbers
             foreach (var line in lines)
             {
                 var cleanLine = line.Trim();
-                if (cleanLine.Contains("Invoice", StringComparison.OrdinalIgnoreCase) || cleanLine.Contains("فاتورة", StringComparison.OrdinalIgnoreCase))
+                if (Regex.IsMatch(cleanLine, @"[a-zA-Z]*nvoice", RegexOptions.IgnoreCase) || cleanLine.Contains("فاتورة", StringComparison.OrdinalIgnoreCase))
                 {
-                    var numbers = Regex.Matches(cleanLine, @"\b(\d{3,10})\b");
+                    var numbers = Regex.Matches(cleanLine, @"\b(\d{3,15})\b");
                     foreach (Match match in numbers)
                     {
                         var number = match.Groups[1].Value;
                         if (IsValidInvoiceNumber(number, cleanLine))
                         {
-                            _logger.LogInformation("Found invoice number in Invoice line: {Number} in line: {Line}", number, cleanLine);
+                            _logger.LogInformation("Found invoice number in Invoice-like line: {Number} in line: {Line}", number, cleanLine);
                             return number;
                         }
                     }
@@ -197,13 +193,13 @@ namespace InvoiceOcr.Services
             }
 
             // Third pass: Look for numbers in lines containing invoice keywords
-            var invoiceKeywords = new[] { "invoice", "فاتورة", "bill", "receipt", "inv", "#" };
+            var invoiceKeywords = new[] {"#" , "invoice", "فاتورة", "bill", "receipt", "inv" };
             foreach (var line in lines)
             {
                 var lowerLine = line.ToLower();
                 if (invoiceKeywords.Any(keyword => lowerLine.Contains(keyword)))
                 {
-                    var numbers = Regex.Matches(line, @"\b(\d{3,10})\b");
+                    var numbers = Regex.Matches(line, @"\b(\d{3,15})\b");
                     foreach (Match match in numbers)
                     {
                         var number = match.Groups[1].Value;
@@ -219,7 +215,7 @@ namespace InvoiceOcr.Services
             // Fourth pass: Look in first 5 lines for standalone numbers (header area)
             foreach (var line in lines.Take(5))
             {
-                var numbers = Regex.Matches(line, @"\b(\d{4,10})\b");
+                var numbers = Regex.Matches(line, @"\b(\d{4,15})\b");
                 foreach (Match match in numbers)
                 {
                     var number = match.Groups[1].Value;
@@ -231,16 +227,16 @@ namespace InvoiceOcr.Services
                 }
             }
 
-            // Fifth pass: More flexible search for any reasonable number in first 10 lines
+            // Fifth pass: More flexible search for any reasonable long number in first 10 lines (fallback)
             foreach (var line in lines.Take(10))
             {
-                var numbers = Regex.Matches(line, @"\b(\d{3,10})\b");
+                var numbers = Regex.Matches(line, @"\b(\d{8,15})\b");
                 foreach (Match match in numbers)
                 {
                     var number = match.Groups[1].Value;
                     if (IsValidInvoiceNumber(number, line) && !IsObviouslyNotInvoiceNumber(number, line))
                     {
-                        _logger.LogDebug("Found potential invoice number: {Number} in line: {Line}", number, line);
+                        _logger.LogDebug("Found potential invoice number (fallback): {Number} in line: {Line}", number, line);
                         return number;
                     }
                 }
