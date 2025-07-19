@@ -50,7 +50,15 @@ A .NET 9 web application that extracts data from invoice images using OCR (Optic
    ```bash
    dotnet run --project InvoiceOcrApp
    ```
-
+## SQL generate 
+  ```bash
+  Add-Migration "Name Of Migration"
+  ```
+  ```bash
+  Update-Database
+  ```
+  write this command In Package Manager Console In Visual Studio 
+  
 ## API Endpoints
 
 ### Upload Controller
