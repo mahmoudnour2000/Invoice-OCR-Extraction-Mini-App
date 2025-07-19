@@ -126,5 +126,13 @@ namespace InvoiceOcr.Services
             }
         }
         #endregion
+
+        #region Get All Invoices
+        public async Task<List<InvoiceDto>> GetAllInvoicesAsync()
+        {
+            var invoices = await _invoiceRepository.GetAllAsync();
+            return invoices.ToDtoList();
+        }
+        #endregion
     }
 }

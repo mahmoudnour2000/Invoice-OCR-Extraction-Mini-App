@@ -15,6 +15,19 @@ namespace InvoiceOcrApp
         {
             #region Application Builder Setup
             var builder = WebApplication.CreateBuilder(args);
+
+            // CORS Configuration
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAngular", policy =>
+                {
+                    policy.WithOrigins("http://localhost:4200")
+                          .AllowAnyHeader()
+                          .AllowAnyMethod()
+                          .AllowCredentials();
+                });
+            });
+
             builder.Services.AddControllers();
             #endregion
 
@@ -33,6 +46,8 @@ namespace InvoiceOcrApp
             builder.Services.AddScoped<OcrService>();
             builder.Services.AddScoped<InvoiceService>();
             #endregion
+
+
 
             #region Swagger Configuration
             builder.Services.AddEndpointsApiExplorer();
@@ -54,6 +69,10 @@ namespace InvoiceOcrApp
             #region Application Pipeline Configuration
             var app = builder.Build();
 
+            // بعد builder.Build()
+            app.UseCors("AllowAngular");
+
+            // Other middleware
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
@@ -65,6 +84,7 @@ namespace InvoiceOcrApp
             }
 
             app.UseHttpsRedirection();
+            app.UseAuthorization();
             app.MapControllers();
             app.Run();
             #endregion

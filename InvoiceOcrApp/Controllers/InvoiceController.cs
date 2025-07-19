@@ -107,6 +107,22 @@ namespace InvoiceOcr.Controllers
                 return StatusCode(500, "An error occurred while retrieving invoice details.");
             }
         }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAllInvoices()
+        {
+            try
+            {
+                var invoices = await _invoiceService.GetAllInvoicesAsync();
+                _logger.LogInformation("Retrieved {Count} invoices.", invoices.Count);
+                return Ok(invoices);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving all invoices.");
+                return StatusCode(500, "An error occurred while retrieving invoices.");
+            }
+        }
         #endregion
 
         #region Invoice Update
